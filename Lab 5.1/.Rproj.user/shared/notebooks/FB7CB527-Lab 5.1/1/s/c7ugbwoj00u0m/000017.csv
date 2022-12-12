@@ -1,0 +1,7 @@
+"0","grade_10 <- yrbss %>%"
+"0","  filter(grade==""10"")%>%"
+"0","  mutate(sleep_less_5 = ifelse(school_night_hours_sleep == ""<5"", ""yes"",""no""))"
+"0",""
+"0","grade_10 %>%"
+"0","  count(sleep_less_5)%>%"
+"0","  mutate(p_hat = n/sum(n))"

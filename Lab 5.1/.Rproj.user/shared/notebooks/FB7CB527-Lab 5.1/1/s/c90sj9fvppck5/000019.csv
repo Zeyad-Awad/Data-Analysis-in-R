@@ -1,0 +1,3 @@
+"0","no_helmet %>%"
+"0","  count(text_30)%>%"
+"0","  mutate(p = n/sum(n))"

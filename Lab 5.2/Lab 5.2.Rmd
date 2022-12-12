@@ -1,0 +1,244 @@
+---
+title: "Lab 5.2"
+author: "Zeyad Awad"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(infer)
+library(skimr)
+data(yrbss)
+set.seed(42)
+```
+```{r include=F}
+options(digits=4)
+library(knitr)
+```
+### Exercise 1
+
+There are 13583 cases in the sample, each case represents a high schooler.
+
+# Exploratory data analysis
+
+### Exercise 2
+1004 observations are missing weight.
+```{r ex2}
+yrbss %>% 
+  skim()
+```
+
+### Exercise 3
+The median weight of students who are physically active at least 3 days a week is slightly greater than that of those who exercise less than 3 days a week. The weights for the "no" section are more skewed to the right. Also, there seem to be two modes for the "yes" section close to the 0.25 quantile and the 0.50 quantile. I expected that the weights of those who regularly exercise to be lower because they lose fats by exercising.
+```{r ex3}
+yrbss <- yrbss %>%
+  mutate(physical_3plus = if_else(physically_active_7d > 2, "yes", "no"))
+  
+yrbss %>% filter(complete.cases(physical_3plus, weight))%>%
+  ggplot(aes(y=physical_3plus, x= weight)) +
+  geom_violin(draw_quantiles = c(0.25,.5,.75))
+```
+
+# Inference
+
+### Exercise 4
+The conditions are Independence and Normality or large sample.
+
+- The variables are independent (TRUE) - The weight of a physically active person does not affect another person's weight.
+
+- The variables are normally distributed (FALSE) - Right skewed (Violin plot).
+
+- The sample is large enough (TRUE) - n > 30 (Table).
+
+Hence, normal approximation is valid.
+
+```{r ex4}
+yrbss %>%
+  group_by(physical_3plus) %>%
+  summarise(mean_weight = mean(weight, na.rm = TRUE), n = n())
+```
+### Exercise 5
+Null: The mean weight of high schoolers who exercise 3 days or more per week is equal to the mean of those who exercise less than 3 days per week.
+
+Alternative: The mean weight of high schoolers who exercise 3 days or more per week is different from the mean of those who exercise less than 3 days per week.
+
+$H_0: µ_{>2} - µ_{<3} = 0$
+
+$H_A: µ_{>2} - µ_{<3} \neq 0$
+
+### Exercise 6
+```{r ex6}
+obs_diff <- yrbss %>% filter(complete.cases(weight, physical_3plus))%>%
+  specify(weight ~ physical_3plus) %>%
+  calculate(stat = "diff in means", order = c("yes", "no"))%>%
+  pull()
+
+null_dist <- yrbss %>% filter(complete.cases(weight, physical_3plus))%>%
+  specify(weight~physical_3plus)%>%
+  hypothesise(null = "independence")%>%
+  generate(reps = 1000, type = "permute")%>%
+  calculate(stat = "diff in means", order = c("yes","no"))
+
+null_dist%>%
+  ggplot(aes(x = stat)) +
+  geom_histogram(bins = 30) +
+  geom_vline(xintercept = obs_diff, color = "red")
+```
+
+### Exercise 7
+There are 0 null permutations that are at least as extreme to the observed difference.
+```{r ex7}
+extremes <- sum(null_dist$stat >= obs_diff) + sum(null_dist$stat <= -obs_diff)
+extremes
+```
+
+### Exercise 8
+As per the documentation, this error is raised when the calculated p-value is 0 because in normal distribution model, the x values go to +/- infinity so it is impossible to get a 0 p-value. Since our reps are only 1000, finite, the calculated p-value is 0. However based on a poisson approximation it should be < 0.003 (as per the documentation).
+```{r ex8}
+null_dist %>%
+  get_p_value(obs_stat = obs_diff, direction = "two_sided")
+```
+
+### Exercise 9
+From this 95% confidence interval, we are 95% confident that the true population difference in means of weights, of high schoolers who exercise at least 3 times per week and those who exercise less than 3 hours per week, is between 1.09 and 2.42. There is a 5% chance that this confidence interval does not capture the population parameter.
+```{r ex9}
+yrbss %>% filter(complete.cases(weight,physical_3plus))%>%
+  specify(weight~physical_3plus)%>%
+  hypothesise(null = "independence")%>%
+  generate(reps = 1000, type = "bootstrap")%>%
+  calculate(stat = "diff in means", order = c("yes","no"))%>%
+  get_ci()
+```
+
+### Exercise 10
+From this 95% confidence interval, we are 95% confident that the true population mean height of 9th-12th grade students is between 1.689 m and 1.693 m. There is a 5% chance that this confidence interval does not capture the population parameter.
+```{r ex10}
+yrbss %>% filter(complete.cases(height))%>%
+  specify(response = height)%>%
+  generate(reps = 1000, type = "bootstrap")%>%
+  calculate(stat = "mean")%>%
+  get_ci()
+```
+### Exercise 11
+
+Compared to the 95% confidence level interval, this interval is narrower ($CI_{90}$ = 0.00306 vs $CI_{95}$ = 0.00348).
+```{r ex11}
+yrbss %>% filter(complete.cases(height))%>%
+  specify(response = height)%>%
+  generate(reps = 1000, type = "bootstrap")%>%
+  calculate(stat = "mean")%>%
+  get_ci(level = 0.90)
+```
+### Exercise 12
+Null: The mean height of high schoolers who exercise 3 days or more per week is equal to the mean of those who exercise less than 3 days per week.
+
+Alternative: The mean height of high schoolers who exercise 3 days or more per week is different from the mean of those who exercise less than 3 days per week.
+
+$H_0: \mu_{>2} - \mu_{<3} = 0$
+
+$H_0: \mu_{>2} - \mu_{<3} \neq 0$
+
+```{r ex12}
+obs_diff_height <- yrbss%>%
+  filter(complete.cases(height, physical_3plus))%>%
+  specify(height ~ physical_3plus) %>%
+  calculate(stat = "diff in means", order = c("yes", "no"))%>%
+  pull()
+  
+null_dist_heights<- yrbss %>% 
+  filter(complete.cases(height, physical_3plus))%>%
+  specify(height~physical_3plus)%>%
+  hypothesise(null = "independence")%>%
+  generate(reps = 1000, type = "permute")%>%
+  calculate(stat = "diff in means", c("yes","no"))
+null_dist_heights%>%
+  visualise()+
+  geom_vline(xintercept = obs_diff_height, color="red")
+
+null_dist_heights %>%
+  get_p_value(obs_stat = obs_diff_height, direction = "two_sided")
+
+
+```
+
+
+### Exercise 13
+There are 7 options, namely: do not watch, <1, 1, 2, 3, 4, and 5+. There are some missing values.
+
+```{r ex13}
+unique(yrbss$hours_tv_per_school_day)
+```
+
+----
+
+### Exercise 14
+Does the number of hours of sleep on a school night of a 9th-12th grade student affect their weight? We will use mathematical modelling to answer this question.
+
+Null: The mean weight of high schoolers who sleep 7 hours or more on a school night is equal to the mean weight of those who sleep less than 7 hours on a school night.
+
+Alternative: The mean weight of high schoolers who sleep 7 hours or more on a school night is not equal to the mean weight of those who sleep less than 7 hours on a school night.
+
+$H_0: \mu_{\geq 7} - \mu_{< 7} = 0$
+
+$H_A: \mu_{\geq 7} - \mu_{< 7} \neq 0$
+
+---
+
+First of all, we mutate hrs_cat to indicate if it is above-or-equal the average sleep duration - chosen to be 7 hours.
+
+```{r ex14.1}
+yrbss <- yrbss%>%
+  mutate(hrs_cat = if_else(school_night_hours_sleep %in% c("7","8","9"), "above_equal","below"))
+```
+
+----
+
+Next, store the observed difference in means
+
+```{r ex 14.2}
+obs <- yrbss%>%
+  filter(complete.cases(weight, hrs_cat))%>%
+  specify(weight~hrs_cat)%>%
+  calculate(stat = "diff in means", order = c("above_equal","below"))%>%
+  pull()
+```
+
+----
+
+Before generating the null, we should check the conditions:
+
+1. variables are normally distributed (FALSE - Right Skewed). However n is large (TRUE).
+2. variables are independent (TRUE).
+
+Hence, we can use the normal model.
+
+```{r 14.3}
+yrbss%>%
+  filter(complete.cases(weight, hrs_cat))%>%
+  ggplot(aes(x = weight, y = hrs_cat))+
+  geom_violin(draw_quantiles = c(0.25,0.5,0.75))
+```
+
+----
+
+From the null distribution, we can clearly see that the observed difference does not belong to the null distribution with $\alpha = 0.05$ . In fact, p-value = 0 which is a very strong indicator that the difference is statistically significant.
+```{r ex14.4}
+null_sleep <- yrbss %>%
+  filter(complete.cases(weight, hrs_cat))%>%
+  specify(weight~hrs_cat)%>%
+  hypothesize(null = "independence")%>%
+  generate(reps = 1000, type = "permute")%>%
+  calculate(stat = "diff in means", order = c("above_equal","below"))
+null_sleep %>%
+  visualise() +
+  geom_vline(xintercept = obs, color = "red") +
+  labs(x = "sleep: above or equal - below")
+null_sleep%>%
+  get_p_value(obs_stat = obs, direction = "two_sided")
+```
+
+----
+
+Based on the above, we would reject the null hypothesis in favor of the alternative. In other words, we conclude that the weight of high schoolers who sleep 7 hours or above on school nights is different (lower) than that of those who sleep less than 7 hours.

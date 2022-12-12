@@ -1,0 +1,6 @@
+"0","ggplot(us_adults, aes(x = climate_change_affects)) +"
+"0","  geom_bar()+"
+"0","  labs("
+"0","    x = """", y = """","
+"0","    title = ""Do you think climate change is affecting your local community?"")+"
+"0","  coord_flip()"

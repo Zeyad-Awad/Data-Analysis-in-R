@@ -1,0 +1,163 @@
+---
+title: "Lab 4"
+author: "Zeyad Awad"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(infer)
+set.seed(50)
+```
+
+```{r}
+global_monitor <- tibble(
+  scientist_work = c(rep("Benefits", 80000), rep("Doesn't benefit", 20000))
+)
+
+ggplot(global_monitor, aes(x=scientist_work))+
+  geom_bar()+
+  labs(x="",y="",
+       title = "Do you believe that the work scientists do benefit people like you?")+
+  coord_flip()
+
+global_monitor %>%
+  count(scientist_work) %>%
+  mutate(p = n/sum(n))
+```
+
+### Exercise 1
+
+Although the proportion of people in the sample who believe scientists work does not benefit them is not exactly the equal to the population proportion, the values are close to each other. The sample predicts that 26% of the people do not believe that scientists work benefits them, while, in fact, 20% of the population believe that scientists work does not benefit them. Our sample over estimates the proportion since 26% \> 20%.
+
+```{r ex1}
+samp1 <- global_monitor %>%
+  sample_n(50)
+samp1 %>%
+  count(scientist_work) %>%
+  mutate(p_hat = n/sum(n))
+
+ggplot(samp1, aes(x=scientist_work))+
+  geom_bar()+
+  labs(x="",y="",
+       title = "Do you believe that the work scientists do benefit people like you?")+
+  coord_flip()
+```
+
+### Exercise 2
+
+It is possible that another student's sample proportion matches mine, because these samples are generated from the same data by random sampling using the function *sample_n*. However, it is not very likely that the proportions would be exactly the same, yet they will be close.
+
+### Exercise 3
+
+The two sample proportions do not match. The sample proportion of *samp1* is greater than that of *samp2* by 0.04. If we take two more samples with sizes 100 and 1000, the latter would provide a more accurate estimate of the population proportion due to the law of large numbers. In fact, we can see that the *samp2* provides a better estimate of the true proportion compared to *samp1*.
+
+```{r ex3}
+samp2 <- global_monitor %>%
+  sample_n(50)
+ samp2 %>%
+  count(scientist_work) %>%
+  mutate(p_hat = n/sum(n))
+```
+
+### Exercise 4
+
+There are 15000 elements in *sample_props50*. As the histogram depicts, the distribution of the sample proportion means is centered around 0.2 (illustrated by the dashed line) as a symmetrical bell-shape curve - normal distribution.
+
+```{r ex4}
+sample_props50 <- global_monitor %>%
+  rep_sample_n(size = 50, reps = 15000, replace = TRUE) %>%
+  group_by(replicate)%>%
+  summarise(p_hat = mean(scientist_work == "Doesn't benefit"))
+
+sample_props50%>%
+ggplot(aes(x = p_hat))+
+  geom_histogram(binwidth = 0.02)+
+  geom_vline(xintercept = median(sample_props50$p_hat), color = "white", alpha = 0.5, linetype = "dashed")+
+  labs(x = "p_hat (Doesn't benefit)",
+    title = "Sampling distribution of p_hat",
+    subtitle = "Sample size = 50, Number of samples = 15000") 
+```
+
+### Exercise 5
+
+There are 25 observations in *sample_props_small*. Each observation represents a different sample mean of sample proportions of size 10.
+
+```{r ex5}
+(
+sample_props_small <- global_monitor %>%
+  rep_sample_n(size = 10, reps = 25, replace = TRUE) %>%
+  group_by(replicate) %>%
+  summarise(p_hat = mean(scientist_work == "Doesn't benefit"))
+)
+```
+
+### Exercise 6
+
+Each observation in the distribution represents a sample mean of proportions. For a sample size of 10, the distribution looks a bit discrete and skewed to the right, the mean is 0.22 and SE is 0.11. As the sample size increases to 50, the distribution gets more symmetrical with a mean of 0.2 and SE of 0.06. At a sample size of 100, The distribution looks uni-modal, more symmetrical, and narrower. It has a mean of 0.2 and SE of 0.04. 
+In conclusion, as the sample size increases, p_hat gets closer to the population proportion, the standard error gets closer to zero and therefore the distribution gets narrower, and the distribution gets closer to a bell-shaped curve. 
+Moreover, these values do not change when the number of simulations increases from 5000 to 10000.
+
+### Exercise 7
+
+Using this sample, we estimate that around 93% of the population believe that scientists' work enhances their lives.
+
+```{r ex7}
+(
+samp15 <- global_monitor %>%
+  sample_n(15) %>%
+  count(scientist_work) %>%
+  mutate(p_hat = n/sum(n))
+)
+
+```
+
+### Exercise 8
+
+The distribution is slightly left-skewed, uni-modal, and has gaps between intervals. Based on the histogram, around 80% of the population are estimated to believe that the work scientists do enhances their lives. The population proportion is found to be 80% as shown in the table.
+
+```{r ex8}
+sample_props15 <- global_monitor %>%
+  rep_sample_n(size = 15, reps = 2000, replace = TRUE) %>%
+  group_by(replicate) %>%
+  summarize(p_hat = mean(scientist_work == "Benefits"))
+
+sample_props15 %>%
+  ggplot(aes(x = p_hat)) +
+  geom_histogram(binwidth = 0.02)+
+  labs(x = "p_hat (Benefits)",
+    title = "Sampling distribution of p_hat",
+    subtitle = "Sample size = 15, Number of samples = 2000") +
+  geom_vline(xintercept = median(sample_props15$p_hat), linetype = "dashed", color = "grey")
+
+global_monitor %>%
+  count(scientist_work) %>%
+  mutate(p = n/sum(n))
+
+```
+
+### Exercise 9
+
+The sampling distribution looks more normal-distributed and no visible skewness appears compared to the distribution above. Based on this distribution, it is estimated that around 80% of people think that scientists' work enhances their lives, illustrated by the dashed line.
+```{r ex9}
+sample_props150 <- global_monitor %>%
+  rep_sample_n(size = 150, reps = 2000, replace = TRUE) %>%
+  group_by(replicate) %>%
+  summarise(p_hat = mean(scientist_work == "Benefits"))
+
+sample_props150 %>%
+  ggplot(aes(x = p_hat)) +
+  geom_histogram(binwidth = 0.02)+
+  geom_vline(xintercept = median(sample_props150$p_hat), color = "white", alpha = 0.5, linetype = "dashed")+
+  labs(x = "p_hat (Doesn't benefit)",
+    title = "Sampling distribution of p_hat",
+    subtitle = "Sample size = 150, Number of samples = 2000") 
+```
+
+### Exercise 10
+
+Of the 15-sample-size and the 150-sample-size distributions, the latter has the smaller spread. When making estimates that are often close to the true value, it is preferred to use a sample distribution with a small spread, because the values are more concentrated around the mean which decreases the margin of error. 
+
+...

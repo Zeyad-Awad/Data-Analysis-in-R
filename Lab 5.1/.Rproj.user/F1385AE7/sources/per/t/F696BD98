@@ -1,0 +1,31 @@
+{
+    "id": "F696BD98",
+    "path": "~/Documents/UPEI/STAT1910/Labs/Lab 5.1/Lab 5.1.Rmd",
+    "project_path": "Lab 5.1.Rmd",
+    "type": "r_markdown",
+    "hash": "4008093522",
+    "contents": "",
+    "dirty": false,
+    "created": 1668386953049.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "134,76",
+        "scrollLine": "132",
+        "rmdVisualMode": "false",
+        "rmdVisualWrapConfigured": "true",
+        "docOutlineVisible": "0",
+        "rmdVisualModeLocation": "1571:2331",
+        "rmdVisualCollapsedChunks": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1668397636,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1668397636649,
+    "read_only": false,
+    "read_only_alternatives": []
+}

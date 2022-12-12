@@ -1,0 +1,142 @@
+---
+title: "Lab 5.1"
+author: "Zeyad Awad"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(infer)
+set.seed(42)
+```
+
+### Exercise 1
+
+As depicted in the table below, 4792 students have not texted while driving and 4646 students did not drive, whereas 925 students texted 1-2 days while driving, 373 texted 10-19 days, 298 texted 20-29 days, 493 texted 3-5 days, 827 texted 30 days, and 311 texted 6-9 days.
+
+```{r ex1}
+yrbss%>%
+  group_by(text_while_driving_30d)%>%
+  count()
+```
+
+### Exercise 2
+
+A we can see, \~0.067 of those who never wears a helmet texted every day in the past 30 days. Also, of all the observations, \~0.034 never wears a helmet and texted everyday for 30 days.
+
+```{r ex2}
+no_helmet <- yrbss %>%
+  filter(helmet_12m=="never")%>%
+  mutate(text_30 = ifelse(text_while_driving_30d == "30", "yes","no"))
+
+no_helmet
+no_helmet %>%
+  count(text_30)%>%
+  mutate(p = n/sum(n))
+
+463/13583
+```
+
+### Exercise 3
+
+Based on this survey, the margin of error, ME, is ME = 0.016.
+
+```{r ex3}
+no_helmet%>%na.omit%>%
+  specify(response = text_30, success = "yes")%>%
+  generate(reps = 1000, type = "bootstrap")%>%
+  calculate(stat = "prop")%>%
+  get_ci(level = 0.95)
+(0.08471455 - 0.06836441)
+```
+
+### Exercise 4
+
+From this data, we are 95% confident that the population proportion, of highschoolers who scored a grade of 10, who sleep less than 5 hours a day is between 0.053 and 0.075. Which means that our margin of error, ME, is ME = 0.022. Our sampling distribution provides an estimate, p_hat, of 0.061.
+
+```{r ex4}
+grade_10 <- yrbss %>%
+  filter(grade=="10")%>%
+  mutate(sleep_less_5 = ifelse(school_night_hours_sleep == "<5", "yes","no"))
+
+grade_10 %>%
+  count(sleep_less_5)%>%
+  mutate(p_hat = n/sum(n))
+
+grade_10%>%na.omit%>%
+  specify(response = sleep_less_5, success = "yes")%>%
+  generate(reps = 1000, type = "bootstrap")%>%
+  calculate(stat = "prop")%>%
+  get_ci(level=0.95)
+```
+
+### Exercise 5
+
+There seems to be a negative quadratic relationship between the margin of error, me, and the population proportion, p. As p approaches 0.5 from either sides, me is maximized.
+We can look at this from a mathematical perspective too. For a fixed value of n, $M(p) = k\times\sqrt{p(1-p)}$ Then $M'(p) = k\times\frac{1-2p}{2\sqrt{p(1-p)}}$ Hence the maximum is at $1-2p = 0$, and that occurs when $p = 0.5$.
+
+```{r ex5}
+n <- 1000
+p <- seq(from = 0, to = 1, by = 0.01)
+me <- 2 * sqrt(p * (1 - p)/n)
+data.frame(p = p, me = me)%>%
+  ggplot(aes(x=p,
+             y=me))+
+  geom_line()+
+  labs(x = "Population Proportion",
+       y = "Margin of Error")
+```
+
+### Exercise 6
+
+```{r ex6}
+
+```
+### Exercise 7
+
+```{r ex7}
+
+```
+### Exercise 8
+
+```{r ex8}
+
+```
+### Exercise 9
+$H_0: p_{sleep10+} - p_{sleep10-}\leq 0$
+<br></br>
+$H_A: p_{sleep10+} - p_{sleep10-} > 0$
+<br></br>
+For a 95% confidence interval, we expect that the difference in proportions of those who sleep more than 10 hours and those who do not, is between 0.026 and 0.152. As depicted by the histogram of our differences of sample proportions, we would not observe a difference of 0 in the confidence interval, hence, there is evidence that those who train every day of the week are more likely to strength train every day of the week.
+```{r ex9}
+yrbss<- yrbss %>%
+  mutate(sleep_10 = ifelse(school_night_hours_sleep == "10+", "10+","10-"))%>%
+  mutate(strength_7d = ifelse(strength_training_7d == "7", "yes","no"))
+
+boots <- yrbss%>%
+  na.omit%>%
+  specify(response = strength_7d, explanatory = sleep_10, success = "yes")%>%
+  generate(reps = 1000, type = "bootstrap")%>%
+  calculate(stat = "diff in props", order = c("10+","10-"))
+
+ci <- boots%>%
+  get_ci(level=0.95)
+ci
+
+boots %>%
+  visualise()+
+  shade_ci(endpoints = ci)+
+  geom_vline(xintercept = 0, color="red")
+```
+
+### Exercise 10
+We are expected to detect a change at $\alpha = 0.05$ due to random chance 5% of the times. Which means that the probability of rejecting the null when it is actually true (Type I Error) is 5%.
+
+### Exercise 11
+$ME = 1.96*\sqrt{(p(1-p)/n)}$ <br></br>
+ME should not exceed 0.01, so we will calculate using the value of p that maximizes ME, p = 0.5.<br></br>
+$0.01 = 1.96*\sqrt{\frac{0.5(1-0.5)}{n}}$ Hence, n = 9604 which can be rounded up to n = 10000.
+
+...

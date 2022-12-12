@@ -1,0 +1,3 @@
+"0","n <- 60"
+"0","samp <- us_adults%>%"
+"0","  sample_n(n)"

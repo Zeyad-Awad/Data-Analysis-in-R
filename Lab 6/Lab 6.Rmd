@@ -1,0 +1,239 @@
+---
+title: "Lab 6"
+author: "Zeyad Awad"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(GGally)
+library(broom)
+```
+
+## Exploration
+
+### Exercise 1
+
+This is an observational study, which means that we cannot draw causal relationships.
+Therefore, the original research question of whether beauty leads directly to the differences in course evaluations cannot be answered by this data due to the absence of random assignment.
+However, it can be rephrased to whether beauty of the professor and the score are associated.
+
+### Exercise 2
+
+The distribution of scores is left-skewed as expected.
+It appears to be bimodal (mode roughly at 4.5).
+This means that the majority of students gave their professors a score above 4.
+On the other hand, there appear to be some students who gave relatively low scores for their professors.
+
+This distribution shape makes sense because the university of Texas is a top university according to QS rankings, which means that their professors are good that they deserve a high score.
+The low scores are probably due to students who didn't like the professor for some other reasons that are not academic.
+
+```{r ex2}
+evals %>%
+  ggplot(aes(x = score)) + 
+  geom_density() +
+  geom_vline(xintercept = median(evals$score), linetype= "dashed", color ="red")
+```
+
+### Exercise 3
+
+There appears to be a weak negative correlation between the professor's age and the average beauty score they received.
+As they get older, there is an associated decrease in their beauty average relative to their younger counterparts.
+
+```{r ex3}
+evals %>%
+  ggplot(aes(x = age, y = bty_avg)) + 
+  geom_point()+
+  geom_smooth(method="lm", formula = 'y~x', se=FALSE)
+  
+```
+
+## Simple Linear Regression
+
+### Exercise 4
+
+The initial scatter plot seems to have less points than the number of observations, but actually there is some overlapping of points that is revealed by the second plot.
+
+```{r ex4}
+evals %>%
+  ggplot(aes(x = bty_avg, y = score)) +
+  geom_point()+
+  geom_smooth(method = lm, formula = y~x, se=FALSE)
+
+evals %>%
+  ggplot(aes(x = bty_avg, y = score)) +
+  geom_jitter()+
+  geom_smooth(method = lm, formula=y~x, se = FALSE)
+```
+
+### Exercise 5
+
+$\widehat{Y} = 3.88034 + 0.06664X$ For every unit increase in the professor's beauty rating average, $X$, there is an associated increase in their score,$Y$, by 0.06664 on average.
+The beauty average is a statistically significant predictor (p-value 0.00005, which is very low).
+It is likely a practically significant predictor. A 10-rated professor on average would have a score about 0.6 higher than a 1-rated professor, which is a significant difference given that the max score is 5.
+
+```{r ex5}
+m_bty <- lm(evals$score~evals$bty_avg)
+m_bty %>% tidy()
+
+```
+
+### Exercise 6
+
+Linearity of beauty average rating and score: There is no clear pattern in the residuals vs fitted plot, suggesting that the variables are linear.
+
+Normality of residuals: The residuals distribution is clearly left-skewed, however the sample size is relatively large so the normality condition can be relaxed.
+
+Equal Variance of residuals across fitted values: No observed fanning in or fanning out, suggesting equal variance.
+
+Hence, we can model the relationship between average beauty rating and score using a least squares regression model.
+
+```{r ex6}
+m_bty %>% augment() %>%
+  ggplot(aes(x = .resid)) +
+  geom_histogram(bins = 20)
+
+m_bty %>% augment() %>%
+  ggplot(aes(x = .fitted, y = .resid))+
+  geom_jitter()+
+  geom_hline(yintercept = 0, color = "red",linetype= "dashed")
+```
+
+## Multiple Linear Regression
+
+```{r}
+ggplot(data = evals, aes(x = bty_f1lower, y = bty_avg)) +
+  geom_point()
+evals %>% 
+  summarise(cor(bty_avg, bty_f1lower))
+evals %>%
+  select(contains("bty")) %>%
+  ggpairs()
+```
+
+### Exercise 7
+
+Linearity of beauty average rating and gender, with score: There is no clear pattern in the residuals vs fitted plot. Suggesting that the variables are linear.
+
+Normality of residuals: The residuals distribution is clearly left-skewed, however the sample size is relatively large so the normality condition can be relaxed.
+
+Equal Variance of residuals across fitted values: No observed major fanning in or fanning out suggesting equal variance.
+
+Hence, we can model the relationship between average beauty rating and gender, with score using a least squares regression model.
+
+```{r ex7}
+m_bty_gen <- lm(score ~ bty_avg + gender, data = evals)
+m_bty_gen %>% augment() %>%
+  ggplot(aes(x=.resid))+
+  geom_histogram(bins = 20)
+
+m_bty_gen %>% augment() %>%
+  ggplot(aes(x=.fitted,y=.resid))+
+  geom_jitter()+
+  geom_hline(yintercept = 0, color = "red", linetype="dashed")
+```
+
+### Exercise 8
+bty_avg remains a significant predictor of score given that the p-value is still very small, however, the model changed the parameter estimate from 0.0666 to 0.0742.
+```{r ex8}
+tidy(m_bty_gen)
+```
+
+### Exercise 9
+
+$\widehat{score} = \hat{\beta_0} + \hat{\beta_1} \times bty\_avg + \hat{\beta_2} \times (1)$
+$= \hat{\beta_0} + \hat{\beta_1} \times bty\_avg + \hat{\beta_2}$
+$= 3.74733824 + 0.07415537	 \times bty\_avg + 0.17238955$
+
+A male professor who received a beauty rating, x, will have, on average, a score 0.17238955	higher than that of a female professor who received the same beauty rating.
+
+### Exercise 10
+R handled the categorical variables by using teaching as the baseline. Also, R named the variables as rank[xxx] where xxx represents the level.
+```{r ex10}
+m_bty_rank <- lm(score ~ bty_avg + rank, data = evals)
+tidy(m_bty_rank)
+```
+
+### Exercise 11
+I think that number of professors, cls_profs, would have the highest p-value because other professors teaching other sections do not affect the rated professor score. In other words, they are probably independent.
+
+### Exercise 12
+We can see that cls_profssingle which is the dummy variable of cls_profs being single, has a p-value of 0.8674581 which is a high value. Therefore the number of professors doesn't have a significant effect on the professors' score.
+
+```{r ex12}
+m_full <- lm(score ~ rank + gender + ethnicity + language + age + cls_perc_eval 
+             + cls_students + cls_level + cls_profs + cls_credits + bty_avg, data = evals)
+tidy(m_full)
+```
+### Exercise 13
+The coefficient of "ethnicitynot minority" is 0.1869649363, which means that, on average, there is an associated increase of 0.1869649363 in the professors score of a "not minority" professor compared to a "minority" professor, all else being equal.
+```{r x13}
+tidy(m_full)
+```
+
+### Exercise 16
+
+Linearity: No obvious pattern seen between the residuals and the fitted values which suggests linearity between score and the model variables.
+
+Normality of Residuals: The distribution of residuals is left skewed, however the number of observations is sufficiently big so that this condition can be relaxed.
+
+Equal Variance: No pattern seen -no major fanning in or out of the residuals across the line- hence equal variance condition is not violated.
+
+```{r ex16}
+m_full%>%
+  ggplot(aes(x=.resid))+
+  geom_histogram(bins=25)
+
+m_full%>%
+  ggplot(aes(x=.fitted, y=.resid))+
+  geom_jitter()+
+  geom_hline(yintercept = 0, color="red", linetype="dashed")
+```
+
+### Exercise 17
+Given that each row represents a course not a professor means that professors who teach more courses have the greater influence on the model. In other words, professors with a low score in course x will likely, on average, have a similar score in course y, since they have the same predictor variables eg., age, language and ethnicity,  which means that observations are not independent of each other and that is a violation of the Independence of observations condition.
+
+### Exercise 18
+Professor characteristics:
+
+- Rank: teaching
+
+- Gender: male
+
+- Ethnicity: not minority
+
+- Language of school: English
+
+- Age: young
+
+- Beauty rating: high
+
+Course characteristics:
+
+- Percent of students in class who completed evaluation: large
+
+- Total number of students in class: large
+
+- Class level: upper
+
+- Number of professors teaching sections in course in sample: multiple
+
+- Number of credits of class: one credit
+
+```{r ex18}
+tidy(m_full)
+```
+
+### Exercise 19
+I would not be comfortable generalizing to apply to professors at any university for several reasons. For instance, non-English speaking countries (eg. Egypt) mainly teach in Arabic, so a professor who received Arabic education would probably have a higher score than another professor who received English education.
+
+Moreover, the data was collected from "a" university in "a" city in "a" state in "a" country. Obviously, the sample is not representative of all professors in all universities but rather representative of the University of Texas professors.
+
+...
+
+

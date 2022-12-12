@@ -1,0 +1,113 @@
+---
+title: "Lab 3"
+author: "Zeyad Awad"
+date: "`r Sys.Date()`"
+output: openintro::lab_report
+---
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(openintro)
+library(statsr)
+library(broom)
+```
+
+### Exercise 1
+
+The dimensions of the dataset are 1458 rows x 123 columns. Each row represents an observation of a country in the HFI in a specific year.
+
+```{r ex-1}
+dim(hfi)
+```
+
+### Exercise 2
+
+```{r ex-2}
+hfi_2016 <- hfi %>%
+  filter(year == "2016") %>%
+  select(pf_expression_control, pf_score, year, countries, hf_score, pf_ss)
+```
+
+### Exercise 3
+
+I would use a scatter plot to display the relationship between these two variables. The relationship looks linear. Hence, predicting the pf_score given pf_expression_control is possible if we use a linear model.
+
+```{r ex-3}
+ggplot(data=hfi_2016, aes(x = pf_expression_control, y = pf_score))+
+  geom_point(alpha=0.7)
+
+```
+
+### Exercise 4
+
+As depicted by the scatter plot in exercise 3 and the table below, there is a positive, strong correlation between these two variables. Additionally, there appears to be some outliers in the bottom left area of the graph.
+
+```{r ex-4}
+hfi_2016 %>%
+  summarise(correlation = cor(pf_expression_control, pf_score))
+```
+
+### Exercise 5
+
+The smallest sum of squares was 102.7. It is relatively close to my neighbours.
+
+```{r ex-5}
+plot_ss(x = pf_expression_control, y = pf_score, data = hfi_2016, showSquares = TRUE)
+```
+
+### Exercise 6
+hf_score = 5.053396 + 0.368432 * pf_expression_control.
+The slope tells us that for every unit increase in pf_expression_control, we expect, on average, a 0.368432 increase in a country's total human freedom score. In a nutshell, the less the political pressure on the media content, the higher the human freedom score.
+```{r ex-6}
+m1 <- lm(hf_score ~ pf_expression_control, data = hfi_2016)
+tidy(m1)
+glance(m1)
+```
+### Exercise 7
+From the regression line, one could depict that for a country with a pf_expression_control of 3, their personal freedom score is predicted to be 5.906 (see table 3). However, the actual observation for this pf_expression_control value has a pf_score of 5.465632 (see table 2). Hence, this is an overestimate. The residual is -0.440368.  
+
+```{r ex-7}
+ggplot(data = hfi_2016, aes(x = pf_expression_control, y = pf_score)) +
+  geom_point(alpha=0.7) +
+  geom_smooth(method = "lm", se = FALSE, formula = y ~ x, color = "darkred")
+
+hfi_2016 %>%
+  filter(pf_expression_control == 3) %>%
+  select(pf_expression_control, pf_score)
+
+4.28+0.542*3
+```
+### Exercise 8
+The appears to be no pattern in the residuals plot; they are scattered. This is an indicator that the two variables have a linear relationship.
+
+``` {r ex-8}
+m1_aug <- augment(m1)
+ggplot(data = m1_aug, aes(x = .fitted, y = .resid)) +
+  geom_point(alpha=0.7) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  xlab("Fitted values") +
+  ylab("Residuals")
+```
+
+### Exercise 9
+Based on the histogram, the residuals are roughly normal-distributed - there is a little left-skewness that makes it not "perfectly" normal-distributed. Hence, the nearly-normal residual condition is not violated.
+
+``` {r ex-9}
+ggplot(data = m1_aug, aes(x = .resid)) +
+  geom_histogram(binwidth = 0.25) +
+  xlab("Residuals")
+```
+
+### Exercise 10
+Based on the residuals vs fitted-values plot, there appears to be roughly constant variability, ie., no "major" fanning in or out. Hence, the constant variability condition is not violated.
+``` {r ex-10}
+m1_aug <- augment(m1)
+ggplot(data = m1_aug, aes(x = .fitted, y = .resid)) +
+  geom_point(alpha=0.7) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  xlab("Fitted values") +
+  ylab("Residuals") 
+
+```
+
+...

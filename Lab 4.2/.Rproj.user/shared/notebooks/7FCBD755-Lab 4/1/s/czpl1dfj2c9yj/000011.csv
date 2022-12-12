@@ -1,0 +1,4 @@
+"0","us_adults %>%"
+"0","  group_by(climate_change_affects) %>%"
+"0","  summarise(n = n()) %>%"
+"0","  mutate(p = n/sum(n))"

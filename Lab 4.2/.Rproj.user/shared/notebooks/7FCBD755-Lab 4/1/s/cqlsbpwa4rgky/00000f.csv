@@ -1,0 +1,4 @@
+"0","library(tidyverse)"
+"0","library(openintro)"
+"0","library(infer)"
+"0","set.seed(42)"
